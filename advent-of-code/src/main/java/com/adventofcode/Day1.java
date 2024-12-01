@@ -40,10 +40,9 @@ public class Day1 {
     static int scoreSimiliar(int[] arrayOne, int[] arrayTwo) {
         HashMap<Integer, Integer> occurences = new HashMap<Integer, Integer>();
         fillOccurences(arrayTwo, occurences);
-        int similiarScore = 0;
-        for (int val: arrayOne) {
-            similiarScore += val * occurences.getOrDefault(val, 0);
-        }
-        return similiarScore;
+        return Arrays
+            .stream(arrayOne)
+            .map((element) -> element * occurences.getOrDefault(element, 0))
+            .sum();
     }
 }
