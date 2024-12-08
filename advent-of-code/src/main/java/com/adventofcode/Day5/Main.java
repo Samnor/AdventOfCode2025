@@ -1,7 +1,9 @@
 package com.adventofcode.Day5;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.ArrayList;
 
 public class Main {
     public static void solve(){
@@ -13,6 +15,7 @@ public class Main {
         System.out.println(updates.get(0).get(0));
         HashMap<Integer, NumberNode> ruleSystem = buildRules(rules);
         int correctSum = 0;
+        int incorrectSum = 0;
         for(List<Integer> update: updates) {
             if (evaluateUpdate(update, ruleSystem)){
                 System.out.println("YES");
@@ -20,13 +23,14 @@ public class Main {
                 System.out.println(update);
             } else {
                 System.out.println("NO");
+                incorrectSum += getSumFromIncorrect(update, ruleSystem);
             }
         }
         System.out.println(correctSum);
+        System.out.println(incorrectSum);
     }
 
     public static Boolean evaluateUpdate(List<Integer> update, HashMap<Integer, NumberNode> ruleSystem) {
-        Boolean result = true;
         for (int i = 0; i < (update.size() - 1); i++) {
             int first = update.get(i);
             int second = update.get(i + 1);
@@ -58,5 +62,36 @@ public class Main {
             result.putIfAbsent(second, secondNode);
         }
         return result;
+    }
+
+    public static int getSumFromIncorrect(List<Integer> update, HashMap<Integer, NumberNode> ruleSystem) {
+        List<Integer> correctUpdate = new ArrayList<>();
+        List<Integer> updateToAdd = new ArrayList<>(update);
+        while (correctUpdate.size() < update.size()){
+            for (int i = 0; i < updateToAdd.size(); i++) {
+                HashSet<NumberNode> fullAfter = new HashSet<>();
+                int baseNumber = updateToAdd.get(i);
+                Boolean badBase = false;
+                for (int j = 0; j < updateToAdd.size(); j++) {
+                    if (i == j) {
+                        continue;
+                    }
+                    int current = updateToAdd.get(j);
+                    fullAfter.addAll(ruleSystem.get(current).after);
+                    if (fullAfter.contains(ruleSystem.get(baseNumber))) {
+                        badBase = true;
+                        break;
+                    }
+                }
+                if (badBase) {
+
+                } else {
+                    correctUpdate.add(baseNumber);
+                    updateToAdd.remove((Integer) baseNumber);
+                    break;
+                }
+            }
+        }
+        return getMiddleValue(correctUpdate);
     }
 }
