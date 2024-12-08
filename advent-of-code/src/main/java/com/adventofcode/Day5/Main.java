@@ -3,14 +3,14 @@ package com.adventofcode.Day5;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.ArrayList;
+import java.util.stream.*;
 
 public class Main {
     public static void solve(){
         List<int[]> rules = ReadPuzzle.readRules();
-        for( int[] rule: rules) {
-            System.out.println(rule[0]);
-        }
+        rules.forEach(rule -> System.out.println(rule[0]));
         List<List<Integer>> updates = ReadPuzzle.readUpdate();
         System.out.println(updates.get(0).get(0));
         HashMap<Integer, NumberNode> ruleSystem = buildRules(rules);
@@ -31,16 +31,17 @@ public class Main {
     }
 
     public static Boolean evaluateUpdate(List<Integer> update, HashMap<Integer, NumberNode> ruleSystem) {
-        for (int i = 0; i < (update.size() - 1); i++) {
-            int first = update.get(i);
-            int second = update.get(i + 1);
-            NumberNode firstNode = ruleSystem.getOrDefault(first, new NumberNode(first));
-            NumberNode secondNode = ruleSystem.getOrDefault(second, new NumberNode(second));
-            if (secondNode.before.contains(firstNode) == false) {
-                return false;
-            }
-        }
-        return true;
+        return IntStream.range(0, update.size() - 1)
+            .allMatch(i -> {
+                int first = update.get(i);
+                int second = update.get(i + 1);
+                NumberNode firstNode = ruleSystem.getOrDefault(first, new NumberNode(first));
+                NumberNode secondNode = ruleSystem.getOrDefault(second, new NumberNode(second));
+                if (secondNode.before.contains(firstNode) == false) {
+                    return false;
+                }
+                return true; 
+            });
     }
 
     public static int getMiddleValue(List<Integer> update) {
@@ -49,7 +50,7 @@ public class Main {
 
     public static HashMap<Integer, NumberNode> buildRules(List<int[]> rules) {
         HashMap<Integer, NumberNode> result = new HashMap<>();
-        for(int[] rule: rules) {
+        rules.forEach(rule -> {
             int first = rule[0];
             int second = rule[1];
             NumberNode firstNode = result.getOrDefault(first, new NumberNode(first));
@@ -60,37 +61,28 @@ public class Main {
             System.out.println(secondNode);
             result.putIfAbsent(first, firstNode);
             result.putIfAbsent(second, secondNode);
-        }
+        });
         return result;
     }
 
     public static int getSumFromIncorrect(List<Integer> update, HashMap<Integer, NumberNode> ruleSystem) {
         List<Integer> correctUpdate = new ArrayList<>();
         List<Integer> updateToAdd = new ArrayList<>(update);
-        while (correctUpdate.size() < update.size()){
-            for (int i = 0; i < updateToAdd.size(); i++) {
-                HashSet<NumberNode> fullAfter = new HashSet<>();
-                int baseNumber = updateToAdd.get(i);
-                Boolean badBase = false;
-                for (int j = 0; j < updateToAdd.size(); j++) {
-                    if (i == j) {
-                        continue;
-                    }
-                    int current = updateToAdd.get(j);
-                    fullAfter.addAll(ruleSystem.get(current).after);
-                    if (fullAfter.contains(ruleSystem.get(baseNumber))) {
-                        badBase = true;
-                        break;
-                    }
-                }
-                if (badBase) {
-
-                } else {
-                    correctUpdate.add(baseNumber);
-                    updateToAdd.remove((Integer) baseNumber);
-                    break;
-                }
-            }
+        while (correctUpdate.size() < update.size()) {
+            Optional<Integer> candidate = updateToAdd.stream()
+                .filter(baseNumber -> {
+                    boolean badBase = updateToAdd.stream()
+                        .filter(current -> current != baseNumber)
+                        .flatMap(current -> ruleSystem.get(current).after.stream())
+                        .anyMatch(node -> node.equals(ruleSystem.get(baseNumber)));
+                    return !badBase;
+                })
+                .findFirst();
+            
+            candidate.ifPresent(baseNumber -> {
+                correctUpdate.add(baseNumber);
+                updateToAdd.remove((Integer) baseNumber);
+            });
         }
         return getMiddleValue(correctUpdate);
     }
